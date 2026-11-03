@@ -321,9 +321,11 @@ def tilelang_correct_h0(
         DV_start = bv * block_DV
         DV_end = (bv + 1) * block_DV
 
-        # Each partition consumes the state produced by the previous GEMM.
-        # Overlapping iterations can race on that state and the shared buffers,
-        # including when traversing partitions in reverse for the backward pass.
+        # Temporary workaround for TileLang's TMA stage-reuse race:
+        # https://github.com/tile-ai/tilelang/pull/3537
+        # Restore T.Pipelined(num_iters - 1, num_stages=2) only after the fix is
+        # released, adopted in FlashQLA's runtime, and validated with the
+        # pipelined forward/backward state-correction regression tests.
         for i_s in T.serial(num_iters - 1):
             idx = seq_start_idx + num_iters - 1 - i_s if reverse else seq_start_idx + i_s
             if state_v_first:
